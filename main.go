@@ -7,14 +7,19 @@ import (
 )
 
 func main() {
-	fmt.Println("Booting up...\nInitialize...\nLoading Database...\nWelcome Pokedex CLI!")
+	fmt.Println("Booting up...\nInitialize...\nLoading Database...\nWelcome, Pokedex CLI!")
 	fmt.Println()
 
 	//initialize commandline reader
 	scanner := bufio.NewScanner(os.Stdin)
 
-	//initialize commands avaible
-	commands := getCommands()
+	//initialize config and commands
+	//config stores temp data for runtime
+	cfg := &config{
+		next:     "https://pokeapi.co/api/v2/location-area/",
+		previous: "https://pokeapi.co/api/v2/location-area/",
+	}
+	commands := getCommands(cfg)
 
 	//loop to read commandline
 	for {
@@ -26,7 +31,7 @@ func main() {
 		input := scanner.Text()
 		_, ok := commands[input]
 		if ok {
-			commands[input].callback()
+			commands[input].callback(cfg)
 		} else {
 			fmt.Printf("Input not valid: %s\n", input)
 		}
