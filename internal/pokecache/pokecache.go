@@ -1,13 +1,35 @@
 package pokecache
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
-type test struct {
-	abc string
-	num int
+type cache struct {
+	cache map[string]cacheEntry
+	mu    *sync.Mutex
 }
 
-func NewCache(t int) {
-	fmt.Println("New Cache was called")
-	return
+type cacheEntry struct {
+	createdAt time.Time
+	val       []byte
+}
+
+func NewCache(interval int) {
+	fmt.Println("New cache was called")
+
+}
+
+func (c cache) Add(key string, val []byte) {
+	fmt.Println("cache Add was called")
+}
+
+func (c cache) Get(key string) ([]byte, bool) {
+	fmt.Printf("cache Get was called with: %v\n", key)
+	return []byte{}, true
+}
+
+func (c cache) reapLoop() {
+	fmt.Println("reapLoop was called")
 }
