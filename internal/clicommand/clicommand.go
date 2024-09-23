@@ -1,4 +1,4 @@
-package main
+package clicommand
 
 import (
 	"encoding/json"
@@ -9,53 +9,53 @@ import (
 )
 
 type cliCommand struct {
-	name        string
-	description string
-	callback    func(*config) error
+	Name        string
+	Description string
+	Callback    func(*Config) error
 }
 
-type config struct {
-	next     string
-	previous string
+type Config struct {
+	Next     string
+	Previous string
 }
 
-func getCommands(cfg *config) map[string]cliCommand {
+func GetCommands(cfg *Config) map[string]cliCommand {
 	commands := map[string]cliCommand{
 		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    commandHelp,
+			Name:        "help",
+			Description: "Displays a help message",
+			Callback:    commandHelp,
 		},
 		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
+			Name:        "exit",
+			Description: "Exit the Pokedex",
+			Callback:    commandExit,
 		},
 		"map": {
-			name:        "map",
-			description: "Displays next 20 location areas in the Pokemon world",
-			callback:    commandMap,
+			Name:        "map",
+			Description: "Displays next 20 location areas in the Pokemon world",
+			Callback:    commandMap,
 		},
 		"mapb": {
-			name:        "mapb",
-			description: "Displays last 20 location areas in the Pokemon world",
-			callback:    commandMapB,
+			Name:        "mapb",
+			Description: "Displays last 20 location areas in the Pokemon world",
+			Callback:    commandMapB,
 		},
 	}
 	return commands
 }
 
-func commandHelp(cfg *config) error {
+func commandHelp(cfg *Config) error {
 	fmt.Print("\nUsage of the Pokedex\nList of commands:\n\n")
-	commands := getCommands(cfg)
+	commands := GetCommands(cfg)
 	for key, value := range commands {
-		fmt.Printf("%s: %s\n", key, value.description)
+		fmt.Printf("%s: %s\n", key, value.Description)
 	}
 	fmt.Println()
 	return nil
 }
 
-func commandExit(cfg *config) error {
+func commandExit(cfg *Config) error {
 	os.Exit(0)
 	return nil
 }
@@ -70,15 +70,15 @@ type getLocations struct {
 	} `json:"results"`
 }
 
-func commandMap(cfg *config) error {
+func commandMap(cfg *Config) error {
 	//exit function if config next is not set
-	if cfg.next == "" {
+	if cfg.Next == "" {
 		fmt.Println("Error cfg has no next")
 		return fmt.Errorf("cfg.next undefined")
 	}
 
 	//get data from PokeApi, read and work
-	resp, err := http.Get(cfg.next)
+	resp, err := http.Get(cfg.Next)
 	if err != nil {
 		fmt.Println("Error get", err)
 		return err
@@ -103,22 +103,22 @@ func commandMap(cfg *config) error {
 
 	//update Next and Previous in config
 	if locations.Next != "" {
-		cfg.next = locations.Next
+		cfg.Next = locations.Next
 	}
 	if locations.Previous != "" {
-		cfg.previous = locations.Previous
+		cfg.Previous = locations.Previous
 	}
 	return nil
 }
 
-func commandMapB(cfg *config) error {
+func commandMapB(cfg *Config) error {
 	//exit function if config previous is not set
-	if cfg.previous == "" {
+	if cfg.Previous == "" {
 		fmt.Println("Error cfg has no previous")
 		return fmt.Errorf("cfg.previous undefined")
 	}
 
-	resp, err := http.Get(cfg.previous)
+	resp, err := http.Get(cfg.Previous)
 	if err != nil {
 		fmt.Println("Error get", err)
 		return err
@@ -143,10 +143,10 @@ func commandMapB(cfg *config) error {
 
 	//update Next and Previous in config
 	if locations.Next != "" {
-		cfg.next = locations.Next
+		cfg.Next = locations.Next
 	}
 	if locations.Previous != "" {
-		cfg.previous = locations.Previous
+		cfg.Previous = locations.Previous
 	}
 
 	return nil

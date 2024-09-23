@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/christopherhanke/bootdev_pokedex/internal/clicommand"
+	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
 )
 
 func main() {
@@ -15,11 +18,13 @@ func main() {
 
 	//initialize config and commands
 	//config stores temp data for runtime
-	cfg := &config{
-		next:     "https://pokeapi.co/api/v2/location-area/",
-		previous: "",
+	cfg := &clicommand.Config{
+		Next:     "https://pokeapi.co/api/v2/location-area/",
+		Previous: "",
 	}
-	commands := getCommands(cfg)
+	commands := clicommand.GetCommands(cfg)
+
+	pokecache.NewCache(5)
 
 	//loop to read commandline
 	for {
@@ -31,7 +36,7 @@ func main() {
 		input := scanner.Text()
 		_, ok := commands[input]
 		if ok {
-			commands[input].callback(cfg)
+			commands[input].Callback(cfg)
 		} else {
 			fmt.Printf("Input not valid: %s\n", input)
 		}
