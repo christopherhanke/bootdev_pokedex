@@ -63,7 +63,7 @@ func commandExit(cfg *config) error {
 type getLocations struct {
 	Count    int    `json:"count"`
 	Next     string `json:"next"`
-	Previous any    `json:"previous"`
+	Previous string `json:"previous"`
 	Results  []struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
@@ -71,17 +71,23 @@ type getLocations struct {
 }
 
 func commandMap(cfg *config) error {
-	fmt.Println("command map")
+	//exit function if config next is not set
+	if cfg.next == "" {
+		fmt.Println("Error cfg has no next")
+		return fmt.Errorf("cfg.next undefined")
+	}
+
+	//get data from PokeApi, read and work
 	resp, err := http.Get(cfg.next)
 	if err != nil {
-		fmt.Println("Error get")
+		fmt.Println("Error get", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error read")
+		fmt.Println("Error read", err)
 		return err
 	}
 
@@ -94,10 +100,54 @@ func commandMap(cfg *config) error {
 	for _, val := range locations.Results {
 		fmt.Println(val.Name)
 	}
+
+	//update Next and Previous in config
+	if locations.Next != "" {
+		cfg.next = locations.Next
+	}
+	if locations.Previous != "" {
+		cfg.previous = locations.Previous
+	}
 	return nil
 }
 
 func commandMapB(cfg *config) error {
-	fmt.Println("command mapb")
+	//exit function if config previous is not set
+	if cfg.previous == "" {
+		fmt.Println("Error cfg has no previous")
+		return fmt.Errorf("cfg.previous undefined")
+	}
+
+	resp, err := http.Get(cfg.previous)
+	if err != nil {
+		fmt.Println("Error get", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error read", err)
+		return err
+	}
+
+	var locations getLocations
+	err = json.Unmarshal(data, &locations)
+	if err != nil {
+		fmt.Println("Error unmarshal", err)
+		return err
+	}
+	for _, val := range locations.Results {
+		fmt.Println(val.Name)
+	}
+
+	//update Next and Previous in config
+	if locations.Next != "" {
+		cfg.next = locations.Next
+	}
+	if locations.Previous != "" {
+		cfg.previous = locations.Previous
+	}
+
 	return nil
 }

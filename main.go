@@ -17,7 +17,7 @@ func main() {
 	//config stores temp data for runtime
 	cfg := &config{
 		next:     "https://pokeapi.co/api/v2/location-area/",
-		previous: "https://pokeapi.co/api/v2/location-area/",
+		previous: "",
 	}
 	commands := getCommands(cfg)
 
