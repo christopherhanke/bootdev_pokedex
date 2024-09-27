@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/christopherhanke/bootdev_pokedex/internal/clicommand"
 	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
 )
+
+const START string = "https://pokeapi.co/api/v2/location-area/"
 
 func main() {
 	fmt.Println("Booting up...\nInitialize...\nLoading Database...\nWelcome, Pokedex CLI!")
@@ -19,12 +22,13 @@ func main() {
 	//initialize config and commands
 	//config stores temp data for runtime
 	cfg := &clicommand.Config{
-		Next:     "https://pokeapi.co/api/v2/location-area/",
+		Next:     START,
 		Previous: "",
 	}
 	commands := clicommand.GetCommands(cfg)
 
-	pokecache.NewCache(5)
+	cache := pokecache.NewCache(time.Duration(5) * time.Second)
+	cache.Add("Test", []byte{})
 
 	//loop to read commandline
 	for {
