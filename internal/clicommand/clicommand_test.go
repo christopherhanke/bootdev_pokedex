@@ -2,6 +2,9 @@ package clicommand
 
 import (
 	"testing"
+	"time"
+
+	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
 )
 
 func TestGetCommands(t *testing.T) {
@@ -25,6 +28,7 @@ func TestCommandMapNext(t *testing.T) {
 	cfg := &Config{
 		Next:     "https://pokeapi.co/api/v2/location-area/",
 		Previous: "",
+		Cache:    pokecache.NewCache(time.Minute * 5),
 	}
 	err := commandMap(cfg)
 	if err != nil {
