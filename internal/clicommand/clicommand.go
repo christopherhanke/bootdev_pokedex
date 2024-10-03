@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 
 	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
+	"github.com/christopherhanke/bootdev_pokedex/internal/pokedex"
 )
 
 type cliCommand struct {
@@ -20,34 +22,40 @@ type Config struct {
 	Next     string
 	Previous string
 	Cache    pokecache.Cache
+	Pokedex  pokedex.Pokedex
 }
 
 func GetCommands(cfg *Config) map[string]cliCommand {
 	commands := map[string]cliCommand{
 		"help": {
 			Name:        "help",
-			Description: "Displays a help message",
+			Description: "Displays a help message.",
 			Callback:    commandHelp,
 		},
 		"exit": {
 			Name:        "exit",
-			Description: "Exit the Pokedex",
+			Description: "Exit the Pokedex.",
 			Callback:    commandExit,
 		},
 		"map": {
 			Name:        "map",
-			Description: "Displays next 20 location areas in the Pokemon world",
+			Description: "Displays next 20 location areas in the Pokemon world.",
 			Callback:    commandMap,
 		},
 		"mapb": {
 			Name:        "mapb",
-			Description: "Displays last 20 location areas in the Pokemon world",
+			Description: "Displays last 20 location areas in the Pokemon world.",
 			Callback:    commandMapB,
 		},
 		"explore": {
 			Name:        "explore",
-			Description: "Explore a given area and list all Pokemon there",
+			Description: "Explore a given area and list all Pokemon there.",
 			Callback:    commandExplore,
+		},
+		"catch": {
+			Name:        "catch",
+			Description: "catch a given Pokemon.",
+			Callback:    commandCatch,
 		},
 	}
 	return commands
@@ -287,6 +295,60 @@ func commandExplore(cfg *Config, args ...string) error {
 	//print list of all Pokemon in area
 	for _, pokemon := range encounters.PokemonEncounters {
 		fmt.Printf(" - %v\n", pokemon.Pokemon.Name)
+	}
+
+	return nil
+}
+
+func commandCatch(cfg *Config, args ...string) error {
+	//exit when no Pokemon is given
+	if len(args) == 0 {
+		fmt.Printf("No Pokemon given to catch.\nPlease use: catch <pokemon>\n")
+		return fmt.Errorf("no Pokemon given")
+	}
+
+	urlPokemon := "https://pokeapi.co/api/v2/pokemon/" + args[0]
+	var pokemon pokedex.Pokemon
+
+	//check if data is in cache
+	if val, ok := cfg.Cache.Get(urlPokemon); ok {
+		err := json.Unmarshal(val, &pokemon)
+		if err != nil {
+			return err
+		}
+	} else {
+		//get data from PokeApi
+		resp, err := http.Get(urlPokemon)
+		if err != nil {
+			fmt.Println("error get", err)
+			return err
+		}
+		defer resp.Body.Close()
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("error reading body", err)
+			return err
+		}
+		err = json.Unmarshal(data, &pokemon)
+		if err != nil {
+			fmt.Println("error unmarshal", err)
+			return err
+		}
+
+		//add to cache
+		if val, err := json.Marshal(pokemon); err != nil {
+			cfg.Cache.Add(urlPokemon, val)
+		}
+	}
+
+	//try to catch pokemon
+	fmt.Printf("Throwing a pokeball at %v\n", args[0])
+	chance := rand.Intn(300)
+	if chance >= pokemon.BaseExperience {
+		fmt.Printf("%v was caught!\n", args[0])
+		cfg.Pokedex.Add(pokemon)
+	} else {
+		fmt.Printf("%v escaped!\n", args[0])
 	}
 
 	return nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/christopherhanke/bootdev_pokedex/internal/clicommand"
 	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
+	"github.com/christopherhanke/bootdev_pokedex/internal/pokedex"
 )
 
 const START string = "https://pokeapi.co/api/v2/location-area/"
@@ -26,6 +27,7 @@ func main() {
 		Next:     START,
 		Previous: "",
 		Cache:    pokecache.NewCache(time.Minute * 5),
+		Pokedex:  map[string]pokedex.Pokemon{},
 	}
 	commands := clicommand.GetCommands(cfg)
 
