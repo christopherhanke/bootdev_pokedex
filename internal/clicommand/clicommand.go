@@ -13,7 +13,7 @@ import (
 type cliCommand struct {
 	Name        string
 	Description string
-	Callback    func(*Config) error
+	Callback    func(*Config, ...string) error
 }
 
 type Config struct {
@@ -44,11 +44,16 @@ func GetCommands(cfg *Config) map[string]cliCommand {
 			Description: "Displays last 20 location areas in the Pokemon world",
 			Callback:    commandMapB,
 		},
+		"explore": {
+			Name:        "explore",
+			Description: "Explore a given area and list all Pokemon there",
+			Callback:    commandExplore,
+		},
 	}
 	return commands
 }
 
-func commandHelp(cfg *Config) error {
+func commandHelp(cfg *Config, args ...string) error {
 	fmt.Print("\nUsage of the Pokedex\nList of commands:\n\n")
 	commands := GetCommands(cfg)
 	for key, value := range commands {
@@ -58,7 +63,7 @@ func commandHelp(cfg *Config) error {
 	return nil
 }
 
-func commandExit(cfg *Config) error {
+func commandExit(cfg *Config, args ...string) error {
 	os.Exit(0)
 	return nil
 }
@@ -73,7 +78,7 @@ type getLocations struct {
 	} `json:"results"`
 }
 
-func commandMap(cfg *Config) error {
+func commandMap(cfg *Config, args ...string) error {
 	//exit function if config next is not set
 	if cfg.Next == "" {
 		fmt.Println("Error cfg has no next")
@@ -108,6 +113,11 @@ func commandMap(cfg *Config) error {
 			fmt.Println("Error unmarshal", err)
 			return err
 		}
+
+		//add data to Cache
+		if val, err := json.Marshal(locations); err == nil {
+			cfg.Cache.Add(cfg.Next, val)
+		}
 	}
 	for _, val := range locations.Results {
 		fmt.Println(val.Name)
@@ -123,7 +133,7 @@ func commandMap(cfg *Config) error {
 	return nil
 }
 
-func commandMapB(cfg *Config) error {
+func commandMapB(cfg *Config, args ...string) error {
 	//exit function if config previous is not set
 	if cfg.Previous == "" {
 		fmt.Println("Error cfg has no previous")
@@ -156,6 +166,11 @@ func commandMapB(cfg *Config) error {
 			fmt.Println("Error unmarshal", err)
 			return err
 		}
+
+		//add data to Cache
+		if val, err := json.Marshal(locations); err == nil {
+			cfg.Cache.Add(cfg.Previous, val)
+		}
 	}
 	for _, val := range locations.Results {
 		fmt.Println(val.Name)
@@ -167,6 +182,111 @@ func commandMapB(cfg *Config) error {
 	}
 	if locations.Previous != "" {
 		cfg.Previous = locations.Previous
+	}
+
+	return nil
+}
+
+type getEncounters struct {
+	EncounterMethodRates []struct {
+		EncounterMethod struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"encounter_method"`
+		VersionDetails []struct {
+			Rate    int `json:"rate"`
+			Version struct {
+				Name string `json:"name"`
+				URL  string `json:"url"`
+			} `json:"version"`
+		} `json:"version_details"`
+	} `json:"encounter_method_rates"`
+	GameIndex int `json:"game_index"`
+	ID        int `json:"id"`
+	Location  struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	} `json:"location"`
+	Name  string `json:"name"`
+	Names []struct {
+		Language struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"language"`
+		Name string `json:"name"`
+	} `json:"names"`
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+		VersionDetails []struct {
+			EncounterDetails []struct {
+				Chance          int   `json:"chance"`
+				ConditionValues []any `json:"condition_values"`
+				MaxLevel        int   `json:"max_level"`
+				Method          struct {
+					Name string `json:"name"`
+					URL  string `json:"url"`
+				} `json:"method"`
+				MinLevel int `json:"min_level"`
+			} `json:"encounter_details"`
+			MaxChance int `json:"max_chance"`
+			Version   struct {
+				Name string `json:"name"`
+				URL  string `json:"url"`
+			} `json:"version"`
+		} `json:"version_details"`
+	} `json:"pokemon_encounters"`
+}
+
+func commandExplore(cfg *Config, args ...string) error {
+	// exit when no area (args) is given
+	if len(args) == 0 {
+		fmt.Printf("No Area given to explore.\nPlease use: explore <area>\n\n")
+		return fmt.Errorf("no area arg given")
+	}
+
+	fmt.Printf("Explore was called with arg: %v\n", args[0])
+
+	urlArea := "https://pokeapi.co/api/v2/location-area/" + args[0]
+	var encounters getEncounters
+
+	//check if data is in cache already
+	if val, ok := cfg.Cache.Get(urlArea); ok {
+		err := json.Unmarshal(val, &encounters)
+		if err != nil {
+			return err
+		}
+	} else {
+		//get data from PokeApi
+		resp, err := http.Get(urlArea)
+		if err != nil {
+			fmt.Println("error get", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("error reading body", err)
+			return err
+		}
+		err = json.Unmarshal(data, &encounters)
+		if err != nil {
+			fmt.Println("error unmarshal", err)
+			return err
+		}
+
+		//add data to Cache
+		if val, err := json.Marshal(encounters); err == nil {
+			cfg.Cache.Add(urlArea, val)
+		}
+	}
+
+	//print list of all Pokemon in area
+	for _, pokemon := range encounters.PokemonEncounters {
+		fmt.Printf(" - %v\n", pokemon.Pokemon.Name)
 	}
 
 	return nil

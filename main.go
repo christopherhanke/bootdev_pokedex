@@ -41,9 +41,13 @@ func main() {
 			continue
 		}
 		commandName := input[0]
+		var args []string
+		if len(input) > 1 {
+			args = input[1:]
+		}
 		_, ok := commands[commandName]
 		if ok {
-			commands[commandName].Callback(cfg)
+			commands[commandName].Callback(cfg, args...)
 		} else {
 			fmt.Printf("Input not valid: %s\n", commandName)
 		}
