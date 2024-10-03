@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/christopherhanke/bootdev_pokedex/internal/clicommand"
@@ -24,11 +25,9 @@ func main() {
 	cfg := &clicommand.Config{
 		Next:     START,
 		Previous: "",
+		Cache:    pokecache.NewCache(time.Minute * 5),
 	}
 	commands := clicommand.GetCommands(cfg)
-
-	cache := pokecache.NewCache(time.Duration(5) * time.Second)
-	cache.Add("Test", []byte{})
 
 	//loop to read commandline
 	for {
@@ -37,12 +36,22 @@ func main() {
 		if err := scanner.Err(); err != nil {
 			fmt.Fprint(os.Stderr, "reading standard input:", err)
 		}
-		input := scanner.Text()
-		_, ok := commands[input]
+		input := cleanInput(scanner.Text())
+		if len(input) == 0 {
+			continue
+		}
+		commandName := input[0]
+		_, ok := commands[commandName]
 		if ok {
-			commands[input].Callback(cfg)
+			commands[commandName].Callback(cfg)
 		} else {
-			fmt.Printf("Input not valid: %s\n", input)
+			fmt.Printf("Input not valid: %s\n", commandName)
 		}
 	}
+}
+
+func cleanInput(input string) []string {
+	loweredInput := strings.ToLower(input)
+	output := strings.Fields(loweredInput)
+	return output
 }

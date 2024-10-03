@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/christopherhanke/bootdev_pokedex/internal/pokecache"
 )
 
 type cliCommand struct {
@@ -17,6 +19,7 @@ type cliCommand struct {
 type Config struct {
 	Next     string
 	Previous string
+	Cache    pokecache.Cache
 }
 
 func GetCommands(cfg *Config) map[string]cliCommand {
@@ -77,25 +80,34 @@ func commandMap(cfg *Config) error {
 		return fmt.Errorf("cfg.next undefined")
 	}
 
-	//get data from PokeApi, read and work
-	resp, err := http.Get(cfg.Next)
-	if err != nil {
-		fmt.Println("Error get", err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error read", err)
-		return err
-	}
-
 	var locations getLocations
-	err = json.Unmarshal(data, &locations)
-	if err != nil {
-		fmt.Println("Error unmarshal", err)
-		return err
+
+	//check data in Cache and present if avaible
+	if val, ok := cfg.Cache.Get(cfg.Next); ok {
+		err := json.Unmarshal(val, &locations)
+		if err != nil {
+			return err
+		}
+	} else {
+		//get data from PokeApi, read and work
+		resp, err := http.Get(cfg.Next)
+		if err != nil {
+			fmt.Println("Error get", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error read", err)
+			return err
+		}
+
+		err = json.Unmarshal(data, &locations)
+		if err != nil {
+			fmt.Println("Error unmarshal", err)
+			return err
+		}
 	}
 	for _, val := range locations.Results {
 		fmt.Println(val.Name)
@@ -118,24 +130,32 @@ func commandMapB(cfg *Config) error {
 		return fmt.Errorf("cfg.previous undefined")
 	}
 
-	resp, err := http.Get(cfg.Previous)
-	if err != nil {
-		fmt.Println("Error get", err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error read", err)
-		return err
-	}
-
 	var locations getLocations
-	err = json.Unmarshal(data, &locations)
-	if err != nil {
-		fmt.Println("Error unmarshal", err)
-		return err
+
+	if val, ok := cfg.Cache.Get(cfg.Previous); ok {
+		err := json.Unmarshal(val, &locations)
+		if err != nil {
+			return err
+		}
+	} else {
+		resp, err := http.Get(cfg.Previous)
+		if err != nil {
+			fmt.Println("Error get", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error read", err)
+			return err
+		}
+
+		err = json.Unmarshal(data, &locations)
+		if err != nil {
+			fmt.Println("Error unmarshal", err)
+			return err
+		}
 	}
 	for _, val := range locations.Results {
 		fmt.Println(val.Name)

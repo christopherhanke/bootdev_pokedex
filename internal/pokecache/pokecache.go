@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type cache struct {
+type Cache struct {
 	cache map[string]cacheEntry
 	mu    *sync.Mutex
 }
@@ -16,9 +16,9 @@ type cacheEntry struct {
 	val       []byte
 }
 
-func NewCache(interval time.Duration) cache {
-	fmt.Println("New cache was called")
-	newCache := cache{
+func NewCache(interval time.Duration) Cache {
+	// fmt.Println("New cache was called")
+	newCache := Cache{
 		cache: make(map[string]cacheEntry),
 		mu:    &sync.Mutex{},
 	}
@@ -26,8 +26,8 @@ func NewCache(interval time.Duration) cache {
 	return newCache
 }
 
-func (c cache) Add(key string, val []byte) {
-	fmt.Printf("cache Add was called with key: %v, value %v\n", key, val)
+func (c Cache) Add(key string, val []byte) {
+	// fmt.Printf("cache Add was called with key: %v, value %v\n", key, val)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.cache[key] = cacheEntry{
@@ -36,8 +36,8 @@ func (c cache) Add(key string, val []byte) {
 	}
 }
 
-func (c cache) Get(key string) ([]byte, bool) {
-	fmt.Printf("cache Get was called with: %v\n", key)
+func (c Cache) Get(key string) ([]byte, bool) {
+	// fmt.Printf("cache Get was called with: %v\n", key)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	item, ok := c.cache[key]
@@ -47,17 +47,17 @@ func (c cache) Get(key string) ([]byte, bool) {
 	return item.val, ok
 }
 
-func (c cache) reapLoop(interval time.Duration) {
-	fmt.Println("reapLoop was called")
+func (c Cache) reapLoop(interval time.Duration) {
+	// fmt.Println("reapLoop was called")
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
-		fmt.Println("reapLoop For begins")
+		// fmt.Println("reapLoop For begins")
 		_, ok := <-ticker.C
 		if !ok {
 			break
 		}
-		fmt.Println("reapLoop after Channel")
+		// fmt.Println("reapLoop after Channel")
 		func() {
 			c.mu.Lock()
 			defer c.mu.Unlock()
