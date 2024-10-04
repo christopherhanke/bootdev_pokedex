@@ -62,6 +62,11 @@ func GetCommands(cfg *Config) map[string]cliCommand {
 			Description: "Inspect a given Pokemon in your Pokedex.",
 			Callback:    commandInspect,
 		},
+		"pokedex": {
+			Name:        "pokedex",
+			Description: "Lists all Pokemon in your personal pokedex.",
+			Callback:    commandPokedex,
+		},
 	}
 	return commands
 }
@@ -385,4 +390,18 @@ func commandInspect(cfg *Config, args ...string) error {
 	}
 
 	return nil
+}
+
+func commandPokedex(cfg *Config, args ...string) error {
+	if len(cfg.Pokedex) == 0 {
+		fmt.Println("You haven't caught any Pokemon yet. Your Pokedex only can show data of caught Pokemon.")
+		return nil
+	}
+
+	fmt.Println("Your Pokedex:")
+	for name := range cfg.Pokedex {
+		fmt.Printf(" - %v\n", name)
+	}
+	return nil
+
 }
